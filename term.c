@@ -6,12 +6,12 @@
 #include <time.h>
 
 // Códigos de cores ANSI
-#define ANSI_COLOR_GREEN    "\x1b[32m"
-#define ANSI_COLOR_YELLOW   "\x1b[33m"
-#define ANSI_COLOR_GREY     "\x1b[90m"
-#define ANSI_COLOR_CYAN     "\x1b[36m"
-#define ANSI_COLOR_RED      "\x1b[31m"
-#define ANSI_COLOR_RESET    "\x1b[0m"
+#define COR_VERDE     "\x1b[32m"
+#define COR_AMARELO   "\x1b[33m"
+#define COR_CINZA     "\x1b[90m"
+#define COR_CIANO     "\x1b[36m"
+#define COR_VERMELHO  "\x1b[31m"
+#define RESETAR_COR   "\x1b[0m"
 
 // Lista encadeada para o ranking
 typedef struct RankingNode {
@@ -45,6 +45,7 @@ void printColoredLetter(char letter, char colorCode);
 void printAttempts(AttemptNode *head);
 void insertNodeInSortedOrder(RankingNode **head, RankingNode *newNode);
 char* chooseRandomWordFromFile();
+
 // Crie uma lista encadeada para o ranking
 RankingNode *rankingList = NULL;
 FILE *palavras;
@@ -54,13 +55,13 @@ int main() {
 
     int menuOption;
     do {
-        printf(ANSI_COLOR_CYAN "-------------------\n" ANSI_COLOR_RESET);
-        printf(ANSI_COLOR_CYAN "|     MENU DO TERM    |\n" ANSI_COLOR_RESET);
-        printf(ANSI_COLOR_CYAN "-------------------\n" ANSI_COLOR_RESET);
+        printf(COR_CIANO "-----------------------\n" RESETAR_COR);
+        printf(COR_CIANO "|     MENU DO TERMO    |\n" RESETAR_COR);
+        printf(COR_CIANO "-----------------------\n" RESETAR_COR);
         printf("1. Jogar\n");
         printf("2. Ver Ranking\n");
         printf("0. Sair\n");
-        printf(ANSI_COLOR_CYAN "Escolha uma alternativa: " ANSI_COLOR_RESET);
+        printf(COR_CIANO "Escolha uma alternativa: " RESETAR_COR);
         scanf("%d", &menuOption);
 
         switch(menuOption) {
@@ -69,20 +70,20 @@ int main() {
                 break;
             case 2:
                 if (rankingList == NULL) {
-                    printf("%sO ranking esta vazio! Jogue para adicionar uma nova pontuaçao.%s\n", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+                    printf("%sO ranking esta vazio! Jogue para adicionar uma nova pontuaçao.%s\n", COR_VERMELHO, RESETAR_COR);
                 } else {
                     printRanking(rankingList);
                 }
                 break;
             case 0:
-                printf("%sObrigado por jogar! Ate a proxima.%s\n", ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
+                printf("%sObrigado por jogar! Ate a proxima.%s\n", COR_AMARELO, RESETAR_COR);
                 break;
             default:
-                printf("%sOpçao invalida. Por favor, use uma alternativa valida.%s\n", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+                printf("%sOpçao invalida. Por favor, use uma alternativa valida.%s\n", COR_VERMELHO, RESETAR_COR);
         }
     } while(menuOption != 0);
 
-    // Liberar a memória da lista encadeada do ranking
+    // Libera a memória da lista encadeada do ranking
     while (rankingList != NULL) {
         RankingNode *temp = rankingList;
         rankingList = rankingList->next;
@@ -96,20 +97,14 @@ void playGame() {
     AttemptNode *attemptsList = NULL;
     int attempts = 1;
 
-    printf("%sVoce tem 6 tentativas para adivinhar uma palavra de 5 letras.%s\n", ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
+    printf("%sVoce tem 6 tentativas para adivinhar uma palavra de 5 letras.%s\n", COR_AMARELO, RESETAR_COR);
 
         while (attempts <= 6) {
-        char userAttempt[10];  // Buffer maior para validar o input 
+        char userAttempt[10];  // Buffer maior para validar o input
         printf("Tentativa %d: ", attempts);
         scanf("%9s", userAttempt);  // Lê até 9 caracteres para evitar overflow
 
         toUpperCase(userAttempt);
-        if (strlen(userAttempt) > 5) {
-            int c;
-            while ((c = getchar()) != '\n' && c != EOF) { }
-            printf("Por favor, digite uma palavra com exatamente 5 letras.\n");
-            continue;
-        }
 
         if (!isValidAttempt(userAttempt)) {
             printf("Por favor, digite uma palavra com exatamente 5 letras.\n");
@@ -122,7 +117,7 @@ void playGame() {
         printAttempts(attemptsList);
 
         if (strcmp(userAttempt, secretWord) == 0) {
-            printf("Parabens! Voce adivinhou a palavra!\n");
+            printf(COR_VERDE "Parabens! Voce adivinhou a palavra!\n" RESETAR_COR);
             break;
         }
 
@@ -138,7 +133,7 @@ void playGame() {
     scanf("%19s", playerName);
     updateRanking(&rankingList, playerName, attempts);
 
-    printf("Deseja voltar ao menu principal? (s/n) ");
+    printf("Deseja jogar novamente? (s/n) ");
     char answer;
     scanf(" %c", &answer);
     if (answer == 's' || answer == 'S') {
@@ -150,7 +145,7 @@ void playGame() {
         }
         // Retorna ao menu principal
     } else {
-        exit(0);  // Sai do jogo completamente
+        exit(0);  // Sai do jogo
     }
 }
 
@@ -298,7 +293,7 @@ void printAttempts(AttemptNode *head) {
             temp = temp->next;
         }
     }
-    printf("Tentativa: %s - Feedback: ", temp->attempt);
+    printf(COR_CIANO "Tentativa: " RESETAR_COR "%s -" COR_VERMELHO " Feedback: " RESETAR_COR, temp->attempt);
     for (int i = 0; i < 5; i++) {
         printColoredLetter(temp->attempt[i], temp->feedback[i]);
     }
@@ -362,31 +357,26 @@ void generateFeedback(char *attempt, char *secret, AttemptNode *head) {
     
 }
 
-
 // Printar a letra com a cor certa
 void printColoredLetter(char letter, char colorCode) {
     switch (colorCode) {
         case 'G':
-            printf(ANSI_COLOR_GREEN "%c" ANSI_COLOR_RESET, letter);
+            printf(COR_VERDE "%c" RESETAR_COR, letter);
             break;
         case 'Y':
-            printf(ANSI_COLOR_YELLOW "%c" ANSI_COLOR_RESET, letter);
+            printf(COR_AMARELO "%c" RESETAR_COR, letter);
             break;
         case 'C':
-            printf(ANSI_COLOR_GREY "%c" ANSI_COLOR_RESET, letter);
+            printf(COR_CINZA "%c" RESETAR_COR, letter);
             break;
     }
 }
-
-// Printar a lista de tentativas e feedbacks
-
 
 // Verificar se o input tem 5 caracteres.
 bool isValidAttempt(char *attempt) {
     int length = strlen(attempt);
     return length == 5;
 }
-
 
 char* chooseRandomWordFromFile() {
     FILE* file = fopen("palavras.txt", "r");
