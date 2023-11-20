@@ -49,7 +49,7 @@ char* chooseRandomWordFromFile();
 RankingNode *rankingList = NULL;
 FILE *palavras;
 
-int main(char *argv[]) {
+int main() {
     loadRanking(&rankingList);
 
     int menuOption;
