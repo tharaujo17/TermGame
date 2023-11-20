@@ -55,9 +55,9 @@ int main() {
 
     int menuOption;
     do {
-        printf(ANSI_COLOR_CYAN "-------------------\n" ANSI_COLOR_RESET);
-        printf(ANSI_COLOR_CYAN "|     MENU DO TERM    |\n" ANSI_COLOR_RESET);
-        printf(ANSI_COLOR_CYAN "-------------------\n" ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_CYAN "------------------------\n" ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_CYAN "|     MENU DO TERMO    |\n" ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_CYAN "------------------------\n" ANSI_COLOR_RESET);
         printf("1. Jogar\n");
         printf("2. Ver Ranking\n");
         printf("0. Sair\n");
