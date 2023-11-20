@@ -11,45 +11,48 @@
 #define ANSI_COLOR_GREY     "\x1b[90m"
 #define ANSI_COLOR_RESET    "\x1b[0m"
 
-// Lista encadeada
-typedef struct Node {
+// Lista encadeada para o ranking
+typedef struct RankingNode {
+    char playerName[20];
+    int attempts;
+    struct RankingNode *next;
+} RankingNode;
+
+// Lista encadeada para as tentativas
+typedef struct AttemptNode {
     char attempt[6];
     char feedback[6];
-    struct Node *next;
-} Node;
-
+    struct AttemptNode *next;
+} AttemptNode;
 
 typedef struct {
     char playerName[20];
     int attempts;
 } RankingEntry;
 
-Node *createNode(char *attempt);
-void appendNode(Node **head, char *attempt);
-void printAttempts(Node *head);
+AttemptNode *createNode(char *attempt);
 void toUpperCase(char *str);
 bool isValidAttempt(char *attempt);
-void generateFeedback(char *attempt, char *secretWord, Node *head);
+void generateFeedback(char *attempt, char *secretWord, AttemptNode *head);
 void printColoredLetter(char letter, char colorCode);
-void printAttempts(Node *head);
 char* chooseRandomWordFromFile();
-void loadRanking(RankingEntry **ranking, int *numEntries);
-void updateRanking(RankingEntry *ranking, int numEntries, char *playerName, int attempts);
-
+void loadRanking(RankingNode **ranking);
+void updateRanking(RankingNode **ranking, char *playerName, int attempts);
+void printRanking(RankingNode *ranking);
+void insertNodeInSortedOrder(RankingNode **head, RankingNode *newNode);
+void appendAttempt(AttemptNode **head, char *attempt);
+void printAttempts(AttemptNode *head);
 
 int main() {
     char* secretWord = chooseRandomWordFromFile();
-    Node *head = NULL;
+    AttemptNode *attemptsList = NULL;
     int attempts = 0;
 
-
-
-        // Crie um array de estruturas RankingEntry para armazenar o ranking
-    RankingEntry *ranking = NULL;
-    int numRankingEntries = 0;
+    // Crie uma lista encadeada para o ranking
+    RankingNode *rankingList = NULL;
 
     // Carregue o ranking existente do arquivo
-    loadRanking(&ranking, &numRankingEntries);
+    loadRanking(&rankingList);
 
     printf("Bem-vindo ao Term!\n");
     printf("Voce tem 6 tentativas para adivinhar uma palavra de 5 letras.\n");
@@ -72,10 +75,10 @@ int main() {
             continue;
         }
 
-        appendNode(&head, userAttempt);
-        generateFeedback(userAttempt, secretWord, head);
+        appendAttempt(&attemptsList, userAttempt);
+        generateFeedback(userAttempt, secretWord, attemptsList);
 
-        printAttempts(head);
+        printAttempts(attemptsList);
 
         if (strcmp(userAttempt, secretWord) == 0) {
             printf("Parabens! Voce adivinhou a palavra!\n");
@@ -92,28 +95,190 @@ int main() {
     printf("Digite seu nome: ");
     char playerName[20];
     scanf("%19s", playerName);
-    updateRanking(ranking, numRankingEntries, playerName, attempts);
+    updateRanking(&rankingList, playerName, attempts);
 
-    // Liberando a memória
-    while (head != NULL) {
-        Node *temp = head;
-        head = head->next;
+    // Liberando a memória das tentativas
+    while (attemptsList != NULL) {
+        AttemptNode *temp = attemptsList;
+        attemptsList = attemptsList->next;
+        free(temp);
+    }
+
+    // Imprimir e liberar a memória do ranking
+    printRanking(rankingList);
+
+    // Liberar a memória da lista encadeada do ranking
+    while (rankingList != NULL) {
+        RankingNode *temp = rankingList;
+        rankingList = rankingList->next;
         free(temp);
     }
 
     printf("Deseja jogar novamente? (s/n) ");
     char answer;
-    scanf("%s", &answer);
-    if (answer == 's') {
+    scanf(" %c", &answer);
+    if (answer == 's' || answer == 'S') {
         main();
     }
 
     return 0;
 }
 
+// Função para carregar o ranking do arquivo
+void loadRanking(RankingNode **ranking) {
+    FILE *file = fopen("ranking.txt", "r");
+    if (file == NULL) {
+        // Se o arquivo não existe, não há entradas no ranking
+        return;
+    }
+
+    char playerName[20];
+    int attempts;
+
+    while (fscanf(file, "%s %d", playerName, &attempts) == 2) {
+        RankingNode *newNode = (RankingNode *)malloc(sizeof(RankingNode));
+        if (newNode == NULL) {
+            printf("Erro ao alocar memória para o ranking.\n");
+            fclose(file);
+            exit(EXIT_FAILURE);
+        }
+
+        strcpy(newNode->playerName, playerName);
+        newNode->attempts = attempts;
+        newNode->next = *ranking;
+
+        *ranking = newNode;
+    }
+
+    fclose(file);
+}
+
+// Função para atualizar o ranking
+void updateRanking(RankingNode **ranking, char *playerName, int attempts) {
+    // Verifica se o jogador já existe no ranking
+    RankingNode *current = *ranking;
+    while (current != NULL) {
+        if (strcmp(current->playerName, playerName) == 0) {
+            // Atualiza as tentativas se o jogador já existe
+            if (attempts < current->attempts) {
+                current->attempts = attempts;
+            }
+            break;  // Não precisa continuar procurando
+        }
+        current = current->next;
+    }
+
+    // Se o jogador não existe, adiciona uma nova entrada
+    if (current == NULL) {
+        RankingNode *newNode = (RankingNode *)malloc(sizeof(RankingNode));
+        if (newNode == NULL) {
+            printf("Erro ao alocar memória para o ranking.\n");
+            exit(EXIT_FAILURE);
+        }
+
+        strcpy(newNode->playerName, playerName);
+        newNode->attempts = attempts;
+        newNode->next = *ranking;
+
+        *ranking = newNode;
+    }
+
+    // Reordena o ranking usando Insertion Sort
+    RankingNode *sorted = NULL;
+    current = *ranking;
+    while (current != NULL) {
+        RankingNode *next = current->next;
+        insertNodeInSortedOrder(&sorted, current);
+        current = next;
+    }
+
+    // Atualiza o ranking original com a ordem correta
+    *ranking = sorted;
+
+    // Salva o ranking atualizado no arquivo
+    FILE *file = fopen("ranking.txt", "w");
+    if (file == NULL) {
+        printf("Erro ao abrir o arquivo de ranking.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Escreve as entradas atualizadas no arquivo
+    current = *ranking;
+    while (current != NULL) {
+        fprintf(file, "%s %d\n", current->playerName, current->attempts);
+        current = current->next;
+    }
+
+    fclose(file);
+}
+
+// Função para inserir um nó ordenadamente em uma lista
+void insertNodeInSortedOrder(RankingNode **head, RankingNode *newNode) {
+    if (*head == NULL || (*head)->attempts >= newNode->attempts) {
+        newNode->next = *head;
+        *head = newNode;
+    } else {
+        RankingNode *current = *head;
+        while (current->next != NULL && current->next->attempts < newNode->attempts) {
+            current = current->next;
+        }
+        newNode->next = current->next;
+        current->next = newNode;
+    }
+}
+
+// Função para imprimir o ranking
+void printRanking(RankingNode *ranking) {
+    printf("\nRanking:\n");
+    while (ranking != NULL) {
+        printf("%s - %d tentativas\n", ranking->playerName, ranking->attempts);
+        ranking = ranking->next;
+    }
+}
+
+// Função para adicionar tentativa na lista encadeada
+void appendAttempt(AttemptNode **head, char *attempt) {
+    AttemptNode *newNode = (AttemptNode *)malloc(sizeof(AttemptNode));
+    if (newNode == NULL) {
+        printf("Erro ao alocar memória para a tentativa.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    strcpy(newNode->attempt, attempt);
+    memset(newNode->feedback, ' ', 5);
+    newNode->feedback[5] = '\0';
+    newNode->next = NULL;
+
+    if (*head == NULL) {
+        *head = newNode;
+    } else {
+        AttemptNode *temp = *head;
+        while (temp->next != NULL) {
+            temp = temp->next;
+        }
+        temp->next = newNode;
+    }
+}
+
+// Função para imprimir a lista de tentativas e feedbacks
+void printAttempts(AttemptNode *head) {
+    AttemptNode *temp = head;
+    if(temp->next != NULL){
+        while(temp->next != NULL){
+            temp = temp->next;
+        }
+    }
+    printf("Tentativa: %s - Feedback: ", temp->attempt);
+    for (int i = 0; i < 5; i++) {
+        printColoredLetter(temp->attempt[i], temp->feedback[i]);
+    }
+    printf("\n");
+    
+}
+
 // Criar novo nó
-Node* createNode(char *attempt) {
-    Node *newNode = (Node*) malloc(sizeof(Node));
+AttemptNode* createNode(char *attempt) {
+    AttemptNode *newNode = (AttemptNode*) malloc(sizeof(AttemptNode));
     if (newNode == NULL) {
         printf("Erro.\n");
         exit(1);
@@ -126,12 +291,12 @@ Node* createNode(char *attempt) {
 }
 
 // Adicionar no final da lista
-void appendNode(Node **head, char *attempt) {
-    Node *newNode = createNode(attempt);
+void appendNode(AttemptNode **head, char *attempt) {
+    AttemptNode *newNode = createNode(attempt);
     if (*head == NULL) {
         *head = newNode;
     } else {
-        Node *temp = *head;
+        AttemptNode *temp = *head;
         while (temp->next != NULL) {
             temp = temp->next;
         }
@@ -145,8 +310,8 @@ void toUpperCase(char *str) {
     }
 }
 // Gerar feedback baseado na tentativa e palavra secreta
-void generateFeedback(char *attempt, char *secret, Node *head) {
-    Node *current = head;
+void generateFeedback(char *attempt, char *secret, AttemptNode *head) {
+    AttemptNode *current = head;
     while (current != NULL) {
         for (int i = 0; i < 5; i++) {
             if (attempt[i] == secret[i]) {
@@ -184,20 +349,7 @@ void printColoredLetter(char letter, char colorCode) {
 }
 
 // Printar a lista de tentativas e feedbacks
-void printAttempts(Node *head) {
-    Node *temp = head;
-    if(temp->next != NULL){
-        while(temp->next != NULL){
-            temp = temp->next;
-        }
-    }
-    printf("Tentativa: %s - Feedback: ", temp->attempt);
-    for (int i = 0; i < 5; i++) {
-        printColoredLetter(temp->attempt[i], temp->feedback[i]);
-    }
-    printf("\n");
-    
-}
+
 
 // Verificar se o input tem 5 caracteres.
 bool isValidAttempt(char *attempt) {
@@ -257,79 +409,3 @@ char* chooseRandomWordFromFile() {
     return randomWord;
 }
 
-
-void loadRanking(RankingEntry **ranking, int *numEntries) {
-    FILE *file = fopen("ranking.txt", "r");
-    if (file == NULL) {
-        // Se o arquivo não existe, não há entradas no ranking
-        return;
-    }
-
-    // Inicializa o número de entradas no ranking
-    *numEntries = 0;
-
-    // Aloca memória inicial para o ranking
-    *ranking = malloc(sizeof(RankingEntry));
-    if (*ranking == NULL) {
-        printf("Erro ao alocar memória para o ranking.\n");
-        fclose(file);
-        exit(EXIT_FAILURE);
-    }
-
-    // Loop para ler as entradas do arquivo
-    while (fscanf(file, "%s %d", (*ranking + *numEntries)->playerName, &(*ranking + *numEntries)->attempts) == 2) {
-        (*numEntries)++;
-        // Realoca memória para o ranking
-        *ranking = realloc(*ranking, (*numEntries + 1) * sizeof(RankingEntry));
-        if (*ranking == NULL) {
-            printf("Erro ao alocar memória para o ranking.\n");
-            fclose(file);
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    fclose(file);
-}
-
-
-// Função para atualizar o ranking
-void updateRanking(RankingEntry *ranking, int numEntries, char *playerName, int attempts) {
-    ranking = realloc(ranking, (numEntries + 1) * sizeof(RankingEntry));
-    if (ranking == NULL) {
-        printf("Erro ao alocar memória para o ranking.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    // Adiciona a nova entrada no final
-    strcpy((ranking + numEntries)->playerName, playerName);
-
-    (ranking + numEntries)->attempts = attempts + 1;
-
-    numEntries++;
-
-
-    for (int i = 1; i < numEntries; i++) {
-        RankingEntry key = *(ranking + i);
-        int j = i - 1;
-
-        while (j >= 0 && (ranking + j)->attempts > key.attempts) {
-            *(ranking + j + 1) = *(ranking + j);
-            j = j - 1;
-        }
-
-        *(ranking + j + 1) = key;
-    }
-
-    // Salva o ranking atualizado no arquivo
-    FILE *file = fopen("ranking.txt", "w");
-    if (file == NULL) {
-        printf("Erro ao abrir o arquivo de ranking.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    for (int i = 0; i < numEntries; i++) {
-        fprintf(file, "%s %d\n", (ranking + i)->playerName, (ranking + i)->attempts);
-    }
-
-    fclose(file);
-}
