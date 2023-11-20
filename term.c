@@ -45,19 +45,18 @@ void printColoredLetter(char letter, char colorCode);
 void printAttempts(AttemptNode *head);
 void insertNodeInSortedOrder(RankingNode **head, RankingNode *newNode);
 char* chooseRandomWordFromFile();
+// Crie uma lista encadeada para o ranking
 RankingNode *rankingList = NULL;
+FILE *palavras;
 
-int main() {
-    // Crie uma lista encadeada para o ranking
-    
-    // Carregue o ranking existente do arquivo
+int main(char *argv[]) {
     loadRanking(&rankingList);
 
     int menuOption;
     do {
-        printf(ANSI_COLOR_CYAN "------------------------\n" ANSI_COLOR_RESET);
-        printf(ANSI_COLOR_CYAN "|     MENU DO TERMO    |\n" ANSI_COLOR_RESET);
-        printf(ANSI_COLOR_CYAN "------------------------\n" ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_CYAN "-------------------\n" ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_CYAN "|     MENU DO TERM    |\n" ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_CYAN "-------------------\n" ANSI_COLOR_RESET);
         printf("1. Jogar\n");
         printf("2. Ver Ranking\n");
         printf("0. Sair\n");
@@ -95,13 +94,13 @@ int main() {
 void playGame() {
     char* secretWord = chooseRandomWordFromFile();
     AttemptNode *attemptsList = NULL;
-    int attempts = 0;
+    int attempts = 1;
 
     printf("%sVoce tem 6 tentativas para adivinhar uma palavra de 5 letras.%s\n", ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
 
-        while (attempts < 6) {
+        while (attempts <= 6) {
         char userAttempt[10];  // Buffer maior para validar o input 
-        printf("Tentativa %d: ", attempts + 1);
+        printf("Tentativa %d: ", attempts);
         scanf("%9s", userAttempt);  // Lê até 9 caracteres para evitar overflow
 
         toUpperCase(userAttempt);
@@ -208,7 +207,7 @@ void updateRanking(RankingNode **ranking, char *playerName, int attempts) {
         }
 
         strcpy(newNode->playerName, playerName);
-        newNode->attempts = attempts+1;
+        newNode->attempts = attempts;
         newNode->next = *ranking;
 
         *ranking = newNode;
