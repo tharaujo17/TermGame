@@ -302,19 +302,22 @@ void updateRanking(RankingEntry *ranking, int numEntries, char *playerName, int 
 
     // Adiciona a nova entrada no final
     strcpy((ranking + numEntries)->playerName, playerName);
-    (ranking + numEntries)->attempts = attempts;
+
+    (ranking + numEntries)->attempts = attempts + 1;
+
     numEntries++;
 
-    // Ordena o ranking usando o algoritmo Bubble Sort
-    for (int i = 0; i < numEntries - 1; i++) {
-        for (int j = 0; j < numEntries - 1 - i; j++) {
-            if ((ranking + j)->attempts > (ranking + j + 1)->attempts) {
-                // Troca as posições se o número de tentativas for maior
-                RankingEntry temp = *(ranking + j);
-                *(ranking + j) = *(ranking + j + 1);
-                *(ranking + j + 1) = temp;
-            }
+
+    for (int i = 1; i < numEntries; i++) {
+        RankingEntry key = *(ranking + i);
+        int j = i - 1;
+
+        while (j >= 0 && (ranking + j)->attempts > key.attempts) {
+            *(ranking + j + 1) = *(ranking + j);
+            j = j - 1;
         }
+
+        *(ranking + j + 1) = key;
     }
 
     // Salva o ranking atualizado no arquivo
