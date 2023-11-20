@@ -33,7 +33,7 @@ typedef struct RankingEntry{
 } RankingEntry;
 
 AttemptNode *createNode(char *attempt);
-void playGame(RankingNode **rankingList);
+void playGame();
 bool isValidAttempt(char *attempt);
 void appendAttempt(AttemptNode **head, char *attempt);
 void toUpperCase(char *str);
@@ -45,10 +45,11 @@ void printColoredLetter(char letter, char colorCode);
 void printAttempts(AttemptNode *head);
 void insertNodeInSortedOrder(RankingNode **head, RankingNode *newNode);
 char* chooseRandomWordFromFile();
+RankingNode *rankingList = NULL;
 
 int main() {
     // Crie uma lista encadeada para o ranking
-    RankingNode *rankingList = NULL;
+    
     // Carregue o ranking existente do arquivo
     loadRanking(&rankingList);
 
@@ -65,7 +66,7 @@ int main() {
 
         switch(menuOption) {
             case 1:
-                playGame(&rankingList);
+                playGame();
                 break;
             case 2:
                 if (rankingList == NULL) {
@@ -91,7 +92,7 @@ int main() {
     return 0;
 }
 
-void playGame(RankingNode **rankingList) {
+void playGame() {
     char* secretWord = chooseRandomWordFromFile();
     AttemptNode *attemptsList = NULL;
     int attempts = 0;
@@ -133,6 +134,11 @@ void playGame(RankingNode **rankingList) {
         printf("Fim do jogo! A palavra era: %s\n", secretWord);
     }
 
+    printf("Digite seu nome: ");
+    char playerName[20];
+    scanf("%19s", playerName);
+    updateRanking(&rankingList, playerName, attempts);
+
     printf("Deseja voltar ao menu principal? (s/n) ");
     char answer;
     scanf(" %c", &answer);
@@ -151,7 +157,7 @@ void playGame(RankingNode **rankingList) {
 
 // Função para carregar o ranking do arquivo
 void loadRanking(RankingNode **ranking) {
-    FILE *file = fopen("ranking.txt", "r");
+    FILE *file = fopen("ranking.txt", "r+");
     if (file == NULL) {
         // Se o arquivo não existe, não há entradas no ranking
         return;
@@ -202,7 +208,7 @@ void updateRanking(RankingNode **ranking, char *playerName, int attempts) {
         }
 
         strcpy(newNode->playerName, playerName);
-        newNode->attempts = attempts;
+        newNode->attempts = attempts+1;
         newNode->next = *ranking;
 
         *ranking = newNode;
