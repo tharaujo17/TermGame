@@ -9,6 +9,8 @@
 #define ANSI_COLOR_GREEN    "\x1b[32m"
 #define ANSI_COLOR_YELLOW   "\x1b[33m"
 #define ANSI_COLOR_GREY     "\x1b[90m"
+#define ANSI_COLOR_CYAN     "\x1b[36m"
+#define ANSI_COLOR_RED      "\x1b[31m"
 #define ANSI_COLOR_RESET    "\x1b[0m"
 
 // Lista encadeada para o ranking
@@ -25,39 +27,78 @@ typedef struct AttemptNode {
     struct AttemptNode *next;
 } AttemptNode;
 
-typedef struct {
+typedef struct RankingEntry{
     char playerName[20];
     int attempts;
 } RankingEntry;
 
 AttemptNode *createNode(char *attempt);
-void toUpperCase(char *str);
+void playGame(RankingNode **rankingList);
 bool isValidAttempt(char *attempt);
+void appendAttempt(AttemptNode **head, char *attempt);
+void toUpperCase(char *str);
 void generateFeedback(char *attempt, char *secretWord, AttemptNode *head);
-void printColoredLetter(char letter, char colorCode);
-char* chooseRandomWordFromFile();
 void loadRanking(RankingNode **ranking);
 void updateRanking(RankingNode **ranking, char *playerName, int attempts);
 void printRanking(RankingNode *ranking);
-void insertNodeInSortedOrder(RankingNode **head, RankingNode *newNode);
-void appendAttempt(AttemptNode **head, char *attempt);
+void printColoredLetter(char letter, char colorCode);
 void printAttempts(AttemptNode *head);
+void insertNodeInSortedOrder(RankingNode **head, RankingNode *newNode);
+char* chooseRandomWordFromFile();
 
 int main() {
+    // Crie uma lista encadeada para o ranking
+    RankingNode *rankingList = NULL;
+    // Carregue o ranking existente do arquivo
+    loadRanking(&rankingList);
+
+    int menuOption;
+    do {
+        printf(ANSI_COLOR_CYAN "-------------------\n" ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_CYAN "|     MENU DO TERM    |\n" ANSI_COLOR_RESET);
+        printf(ANSI_COLOR_CYAN "-------------------\n" ANSI_COLOR_RESET);
+        printf("1. Jogar\n");
+        printf("2. Ver Ranking\n");
+        printf("0. Sair\n");
+        printf(ANSI_COLOR_CYAN "Escolha uma alternativa: " ANSI_COLOR_RESET);
+        scanf("%d", &menuOption);
+
+        switch(menuOption) {
+            case 1:
+                playGame(&rankingList);
+                break;
+            case 2:
+                if (rankingList == NULL) {
+                    printf("%sO ranking esta vazio! Jogue para adicionar uma nova pontuaçao.%s\n", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+                } else {
+                    printRanking(rankingList);
+                }
+                break;
+            case 0:
+                printf("%sObrigado por jogar! Ate a proxima.%s\n", ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
+                break;
+            default:
+                printf("%sOpçao invalida. Por favor, use uma alternativa valida.%s\n", ANSI_COLOR_RED, ANSI_COLOR_RESET);
+        }
+    } while(menuOption != 0);
+
+    // Liberar a memória da lista encadeada do ranking
+    while (rankingList != NULL) {
+        RankingNode *temp = rankingList;
+        rankingList = rankingList->next;
+        free(temp);
+    }
+    return 0;
+}
+
+void playGame(RankingNode **rankingList) {
     char* secretWord = chooseRandomWordFromFile();
     AttemptNode *attemptsList = NULL;
     int attempts = 0;
 
-    // Crie uma lista encadeada para o ranking
-    RankingNode *rankingList = NULL;
+    printf("%sVoce tem 6 tentativas para adivinhar uma palavra de 5 letras.%s\n", ANSI_COLOR_YELLOW, ANSI_COLOR_RESET);
 
-    // Carregue o ranking existente do arquivo
-    loadRanking(&rankingList);
-
-    printf("Bem-vindo ao Term!\n");
-    printf("Voce tem 6 tentativas para adivinhar uma palavra de 5 letras.\n");
-
-    while (attempts < 6) {
+        while (attempts < 6) {
         char userAttempt[10];  // Buffer maior para validar o input 
         printf("Tentativa %d: ", attempts + 1);
         scanf("%9s", userAttempt);  // Lê até 9 caracteres para evitar overflow
@@ -92,36 +133,20 @@ int main() {
         printf("Fim do jogo! A palavra era: %s\n", secretWord);
     }
 
-    printf("Digite seu nome: ");
-    char playerName[20];
-    scanf("%19s", playerName);
-    updateRanking(&rankingList, playerName, attempts);
-
-    // Liberando a memória das tentativas
-    while (attemptsList != NULL) {
-        AttemptNode *temp = attemptsList;
-        attemptsList = attemptsList->next;
-        free(temp);
-    }
-
-    // Imprimir e liberar a memória do ranking
-    printRanking(rankingList);
-
-    // Liberar a memória da lista encadeada do ranking
-    while (rankingList != NULL) {
-        RankingNode *temp = rankingList;
-        rankingList = rankingList->next;
-        free(temp);
-    }
-
-    printf("Deseja jogar novamente? (s/n) ");
+    printf("Deseja voltar ao menu principal? (s/n) ");
     char answer;
     scanf(" %c", &answer);
     if (answer == 's' || answer == 'S') {
-        main();
+        // Limpa a memória das tentativas antes de voltar ao menu
+        while (attemptsList != NULL) {
+            AttemptNode *temp = attemptsList;
+            attemptsList = attemptsList->next;
+            free(temp);
+        }
+        // Retorna ao menu principal
+    } else {
+        exit(0);  // Sai do jogo completamente
     }
-
-    return 0;
 }
 
 // Função para carregar o ranking do arquivo
@@ -408,4 +433,3 @@ char* chooseRandomWordFromFile() {
 
     return randomWord;
 }
-
