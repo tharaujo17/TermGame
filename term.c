@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <time.h>
 
 // Códigos de cores ANSI
 #define ANSI_COLOR_GREEN    "\x1b[32m"
@@ -22,12 +23,14 @@ void appendNode(Node **head, char *attempt);
 void printAttempts(Node *head);
 void toUpperCase(char *str);
 bool isValidAttempt(char *attempt);
-void generateFeedback(char *attempt, char *secretWord, char *feedback);
+void generateFeedback(char *attempt, char *secretWord, Node *head);
 void printColoredLetter(char letter, char colorCode);
 void printAttempts(Node *head);
+char* chooseRandomWordFromFile();
+
 
 int main() {
-    char secretWord[6] = "CARRO";
+    char* secretWord = chooseRandomWordFromFile();
     Node *head = NULL;
     int attempts = 0;
 
@@ -53,7 +56,7 @@ int main() {
         }
 
         appendNode(&head, userAttempt);
-        generateFeedback(userAttempt, secretWord, head->feedback);
+        generateFeedback(userAttempt, secretWord, head);
 
         printAttempts(head);
 
@@ -74,6 +77,13 @@ int main() {
         Node *temp = head;
         head = head->next;
         free(temp);
+    }
+
+    printf("Deseja jogar novamente? (s/n) ");
+    char answer;
+    scanf("%s", &answer);
+    if (answer == 's') {
+        main();
     }
 
     return 0;
@@ -113,22 +123,28 @@ void toUpperCase(char *str) {
     }
 }
 // Gerar feedback baseado na tentativa e palavra secreta
-void generateFeedback(char *attempt, char *secret, char *feedback) {
-    for (int i = 0; i < 5; i++) {
-        if (attempt[i] == secret[i]) {
-            feedback[i] = 'G';
-        } else {
-            bool found = false;
-            for (int j = 0; j < 5; j++) {
-                if (i != j && attempt[i] == secret[j]) {
-                    found = true;
-                    break;
+void generateFeedback(char *attempt, char *secret, Node *head) {
+    Node *current = head;
+    while (current != NULL) {
+        for (int i = 0; i < 5; i++) {
+            if (attempt[i] == secret[i]) {
+                current->feedback[i] = 'G';
+            } else {
+                bool found = false;
+                for (int j = 0; j < 5; j++) {
+                    if (i != j && attempt[i] == secret[j]) {
+                        found = true;
+                        break;
+                    }
                 }
+                current->feedback[i] = found ? 'Y' : 'C';
             }
-            feedback[i] = found ? 'Y' : 'C';
         }
+        current = current->next;  // Avançar para o próximo nó
     }
+    
 }
+
 
 // Printar a letra com a cor certa
 void printColoredLetter(char letter, char colorCode) {
@@ -161,4 +177,56 @@ void printAttempts(Node *head) {
 bool isValidAttempt(char *attempt) {
     int length = strlen(attempt);
     return length == 5;
+}
+
+
+char* chooseRandomWordFromFile() {
+    FILE* file = fopen("palavras.txt", "r");
+    if (file == NULL) {
+        printf("Erro ao abrir o arquivo de palavras.\n");
+        exit(1);
+    }
+
+    // Conte o número de linhas no arquivo
+    int numLines = 0;
+    char line[100];  // Assuma que nenhuma linha terá mais de 100 caracteres
+    while (fgets(line, sizeof(line), file) != NULL) {
+        numLines++;
+    }
+
+    // Gere uma semente para a função rand() com base no tempo atual
+    srand((unsigned int)time(NULL));
+
+    // Escolha um número aleatório entre 0 e numLines-1
+    int randomIndex = rand() % numLines;
+
+    // Reposicione o ponteiro do arquivo para o início
+    rewind(file);
+
+    // Pule as linhas até chegar à linha escolhida aleatoriamente
+    for (int i = 0; i < randomIndex; i++) {
+        if (fgets(line, sizeof(line), file) == NULL) {
+            printf("Erro ao ler o arquivo de palavras.\n");
+            fclose(file);
+            exit(1);
+        }
+    }
+
+    // Remova a quebra de linha da palavra lida
+    line[strcspn(line, "\n")] = '\0';
+
+    // Aloque memória para a palavra escolhida aleatoriamente
+    char* randomWord = malloc(strlen(line) + 1);
+    if (randomWord == NULL) {
+        printf("Erro ao alocar memória para a palavra.\n");
+        fclose(file);
+        exit(1);
+    }
+
+    // Copie a palavra escolhida aleatoriamente para a memória alocada
+    strcpy(randomWord, line);
+
+    fclose(file);
+
+    return randomWord;
 }
