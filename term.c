@@ -99,7 +99,7 @@ void playGame() {
 
     printf("%sVoce tem 6 tentativas para adivinhar uma palavra de 5 letras.%s\n", COR_AMARELO, RESETAR_COR);
 
-        while (attempts <= 6) {
+        while (attempts < 7) {
         char userAttempt[10];  // Buffer maior para validar o input
         printf("Tentativa %d: ", attempts);
         scanf("%9s", userAttempt);  // Lê até 9 caracteres para evitar overflow
@@ -121,10 +121,12 @@ void playGame() {
             break;
         }
 
-        attempts++;
+        if (attempts != 7) {
+            attempts++;
+        }
     }
 
-    if (attempts == 6) {
+    if (attempts >= 6) {
         printf("Fim do jogo! A palavra era: %s\n", secretWord);
     }
 
@@ -202,7 +204,7 @@ void updateRanking(RankingNode **ranking, char *playerName, int attempts) {
         }
 
         strcpy(newNode->playerName, playerName);
-        newNode->attempts = attempts;
+        newNode->attempts = attempts - 1;
         newNode->next = *ranking;
 
         *ranking = newNode;
