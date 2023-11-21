@@ -111,7 +111,24 @@ void playGame() {
             continue;
         }
 
+        
+
+        
+
         appendAttempt(&attemptsList, userAttempt);
+
+        AttemptNode *current = attemptsList;
+
+        while(current->next != NULL){
+            if(strcmp(current->attempt, userAttempt) == 0){
+                printf("%sVoce ja tentou essa palavra!%s\n", COR_VERMELHO, RESETAR_COR);
+                attempts--;
+                break;
+            }
+            current = current->next;
+        }
+
+
         generateFeedback(userAttempt, secretWord, attemptsList);
 
         printAttempts(attemptsList);
@@ -127,7 +144,7 @@ void playGame() {
     }
 
     if (attempts >= 6) {
-        printf("Fim do jogo! A palavra era: %s\n", secretWord);
+        printf(COR_VERMELHO "Fim do jogo! A palavra secreta era:" RESETAR_COR COR_VERDE " %s\n" RESETAR_COR, secretWord);
     }
 
     printf("Digite seu nome: ");
@@ -204,7 +221,12 @@ void updateRanking(RankingNode **ranking, char *playerName, int attempts) {
         }
 
         strcpy(newNode->playerName, playerName);
-        newNode->attempts = attempts - 1;
+        if(attempts > 6){
+            newNode->attempts = 6;
+        }
+        else{
+            newNode->attempts = attempts;
+        }
         newNode->next = *ranking;
 
         *ranking = newNode;
